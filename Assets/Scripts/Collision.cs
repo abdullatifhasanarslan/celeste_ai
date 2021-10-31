@@ -20,27 +20,38 @@ public class Collision : MonoBehaviour
 
     [Header("Collision")]
 
-    public float collisionRadius = 0.25f;
+    public Vector2 collisionRadius = new Vector2(5, 5);
+    public Vector2 collisionRadiusBOTTOM;
     public Vector2 bottomOffset, rightOffset, leftOffset;
     private Color debugCollisionColor = Color.red;
+    Rigidbody2D PlayerRb;
+    BoxCollider2D boxCollider;
 
     // Start is called before the first frame update
     void Start()
     {
-        
+        PlayerRb = GetComponent<Rigidbody2D>();
+        boxCollider = GetComponent<BoxCollider2D>();
     }
 
     // Update is called once per frame
     void Update()
     {  
-        onGround = Physics2D.OverlapCircle((Vector2)transform.position + bottomOffset, collisionRadius, groundLayer);
-        onWall = Physics2D.OverlapCircle((Vector2)transform.position + rightOffset, collisionRadius, groundLayer) 
-            || Physics2D.OverlapCircle((Vector2)transform.position + leftOffset, collisionRadius, groundLayer);
-
-        onRightWall = Physics2D.OverlapCircle((Vector2)transform.position + rightOffset, collisionRadius, groundLayer);
-        onLeftWall = Physics2D.OverlapCircle((Vector2)transform.position + leftOffset, collisionRadius, groundLayer);
-
+        onGround = groundCheck();
+        onWall =  wallCheck(Vector2.right) || wallCheck(Vector2.left);
+        onRightWall = wallCheck(Vector2.right);
+        onLeftWall = wallCheck(Vector2.left);
         wallSide = onRightWall ? -1 : 1;
+    }
+
+    private bool groundCheck(){
+        RaycastHit2D Hitinfo = Physics2D.BoxCast(boxCollider.bounds.center, boxCollider.bounds.size, 0f, Vector2.down, 0.1f, groundLayer);
+        return Hitinfo.collider != null;
+    }
+
+    private bool wallCheck(Vector2 direction){
+        RaycastHit2D Hitinfo = Physics2D.BoxCast(boxCollider.bounds.center, boxCollider.bounds.size, 0f, direction, 0.1f, groundLayer);
+        return Hitinfo.collider != null;
     }
 
     void OnDrawGizmos()
@@ -49,8 +60,8 @@ public class Collision : MonoBehaviour
 
         var positions = new Vector2[] { bottomOffset, rightOffset, leftOffset };
 
-        Gizmos.DrawWireSphere((Vector2)transform.position  + bottomOffset, collisionRadius);
-        Gizmos.DrawWireSphere((Vector2)transform.position + rightOffset, collisionRadius);
-        Gizmos.DrawWireSphere((Vector2)transform.position + leftOffset, collisionRadius);
+        Gizmos.DrawWireCube((Vector3)transform.position  + (Vector3)bottomOffset, (Vector3)collisionRadiusBOTTOM);
+        Gizmos.DrawWireCube((Vector3)transform.position + (Vector3)rightOffset, (Vector3)collisionRadius);
+        Gizmos.DrawWireCube((Vector3)transform.position + (Vector3)leftOffset, (Vector3)collisionRadius);
     }
 }

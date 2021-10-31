@@ -4,17 +4,16 @@ using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
 
-public class Movement : MonoBehaviour
+public class OLDMovement : MonoBehaviour
 {
-    private Collision coll;
+    private OLDCollision coll;
     [HideInInspector]
     public Rigidbody2D rb;
-    private AnimationScript anim;
+    private OLDAnimationScript anim;
 
     [Space]
     [Header("Stats")]
     public float speed = 10;
-    public float maxSpeed = 10;
     public float jumpForce = 50;
     public float slideSpeed = 5;
     public float wallJumpLerp = 10;
@@ -23,14 +22,10 @@ public class Movement : MonoBehaviour
     [Space]
     [Header("Booleans")]
     public bool canMove;
-    public bool canWallSlide;
     public bool wallGrab;
-    public bool pushingWall;
     public bool wallJumped;
     public bool wallSlide;
     public bool isDashing;
-    public bool isJumping;
-    public bool isFalling;
 
     [Space]
 
@@ -49,12 +44,9 @@ public class Movement : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        coll = GetComponent<Collision>();
+        coll = GetComponent<OLDCollision>();
         rb = GetComponent<Rigidbody2D>();
-        anim = GetComponentInChildren<AnimationScript>();
-    }
-    void FixedUpdate()
-    {
+        anim = GetComponentInChildren<OLDAnimationScript>();
     }
 
     // Update is called once per frame
@@ -86,7 +78,7 @@ public class Movement : MonoBehaviour
         if (coll.onGround && !isDashing)
         {
             wallJumped = false;
-            GetComponent<BetterJumping>().enabled = true;
+            GetComponent<OLDBetterJumping>().enabled = true;
         }
         
         if (wallGrab && !isDashing)
@@ -104,30 +96,17 @@ public class Movement : MonoBehaviour
             rb.gravityScale = 3;
         }
 
-        if(rb.velocity.y < 0){
-            isJumping = false;
-            isFalling = true;
-        }
-
         if(coll.onWall && !coll.onGround)
         {
-            if (x != 0 && !wallGrab && isFalling)
+            if (x != 0 && !wallGrab)
             {
-                //isFalling = false;
                 wallSlide = true;
                 WallSlide();
             }
         }
 
-        //TERMINAL VELOCITY WHEN FALLING
-        if(isFalling){
-            if(rb.velocity.magnitude > maxSpeed)
-            {
-                rb.velocity = rb.velocity.normalized * maxSpeed;
-            }
-        }
-        // if (!coll.onWall || coll.onGround)
-        //     wallSlide = false;
+        if (!coll.onWall || coll.onGround)
+            wallSlide = false;
 
         if (Input.GetButtonDown("Jump"))
         {
@@ -179,9 +158,6 @@ public class Movement : MonoBehaviour
     {
         hasDashed = false;
         isDashing = false;
-        isJumping = false;
-        isFalling = false;
-        wallSlide = false;
 
         side = anim.sr.flipX ? -1 : 1;
 
@@ -194,7 +170,6 @@ public class Movement : MonoBehaviour
         Camera.main.transform.DOShakePosition(.2f, .5f, 14, 90, false, true);
         FindObjectOfType<RippleEffect>().Emit(Camera.main.WorldToViewportPoint(transform.position));
 
-        isFalling = false;
         hasDashed = true;
 
         anim.SetTrigger("dash");
@@ -202,19 +177,19 @@ public class Movement : MonoBehaviour
         rb.velocity = Vector2.zero;
         Vector2 dir = new Vector2(x, y);
 
-        rb.velocity += dir * dashSpeed;
+        rb.velocity += dir.normalized * dashSpeed;
         StartCoroutine(DashWait());
     }
 
     IEnumerator DashWait()
     {
-        FindObjectOfType<GhostTrail>().ShowGhost();
+        FindObjectOfType<OLDGhostTrail>().ShowGhost();
         StartCoroutine(GroundDash());
-        DOVirtual.Float(14, 0, .3f, RigidbodyDrag);
+        DOVirtual.Float(14, 0, .8f, RigidbodyDrag);
 
         dashParticle.Play();
         rb.gravityScale = 0;
-        GetComponent<BetterJumping>().enabled = false;
+        GetComponent<OLDBetterJumping>().enabled = false;
         wallJumped = true;
         isDashing = true;
 
@@ -222,7 +197,7 @@ public class Movement : MonoBehaviour
 
         dashParticle.Stop();
         rb.gravityScale = 3;
-        GetComponent<BetterJumping>().enabled = true;
+        GetComponent<OLDBetterJumping>().enabled = true;
         wallJumped = false;
         isDashing = false;
     }
@@ -260,7 +235,7 @@ public class Movement : MonoBehaviour
         if (!canMove)
             return;
 
-        pushingWall = false;
+        bool pushingWall = false;
         if((rb.velocity.x > 0 && coll.onRightWall) || (rb.velocity.x < 0 && coll.onLeftWall))
         {
             pushingWall = true;
@@ -272,9 +247,8 @@ public class Movement : MonoBehaviour
 
     private void Walk(Vector2 dir)
     {
-        if (!canMove){
+        if (!canMove)
             return;
-        }
 
         if (wallGrab)
             return;
@@ -291,7 +265,6 @@ public class Movement : MonoBehaviour
 
     private void Jump(Vector2 dir, bool wall)
     {
-        isJumping = true;
         slideParticle.transform.parent.localScale = new Vector3(ParticleSide(), 1, 1);
         ParticleSystem particle = wall ? wallJumpParticle : jumpParticle;
 
