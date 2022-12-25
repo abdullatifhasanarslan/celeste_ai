@@ -27,6 +27,12 @@ public class Collision : MonoBehaviour
     Rigidbody2D PlayerRb;
     BoxCollider2D boxCollider;
 
+
+
+    void Awake() {
+         Application.targetFrameRate = 30;
+     }
+
     // Start is called before the first frame update
     void Start()
     {
